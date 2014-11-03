@@ -96,15 +96,15 @@ private:
 
    /* private constructor */
    Firmware() :
-      m_cTimer(TCCR0A,
-               TCCR0A | (_BV(WGM00) | _BV(WGM01)),
-               TCCR0B,
-               TCCR0B | (_BV(CS00) | _BV(CS01)),
-               TIMSK0,
-               TIMSK0 | _BV(TOIE0),
-               TIFR0,
-               TCNT0,
-               TIMER0_OVF_vect_num),
+      m_cTimer(TCCR2A,
+               TCCR2A | (1 << WGM21) | (1 << WGM20),
+               TCCR2B,
+               TCCR2B | (1 << CS22),
+               TIMSK2,
+               TIMSK2 | (1 << TOIE2),
+               TIFR2,
+               TCNT2,
+               TIMER2_OVF_vect_num),
       m_cHUARTController(HardwareSerial::instance()),
       m_cTWController(CTWController::GetInstance()) {     
 

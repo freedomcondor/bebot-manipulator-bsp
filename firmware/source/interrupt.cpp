@@ -12,10 +12,10 @@ void CInterrupt::Register(CInterrupt* pc_interrupt, uint8_t un_interrupt_num) {
 }
 
 /* Handlers */
-   void CInterrupt::Handler01() {
-      if(ppcInterruptOwner[0])
-         ppcInterruptOwner[0]->ServiceRoutine();
-   }
+// void CInterrupt::Handler01() {
+//    if(ppcInterruptOwner[0])
+//       ppcInterruptOwner[0]->ServiceRoutine();
+// }
 
 // void CInterrupt::Handler02() {
 //    if(ppcInterruptOwner[1])
@@ -52,25 +52,25 @@ void CInterrupt::Register(CInterrupt* pc_interrupt, uint8_t un_interrupt_num) {
 //       ppcInterruptOwner[7]->ServiceRoutine();
 // }
 
-// void CInterrupt::Handler09() {
-//    if(ppcInterruptOwner[8])
-//       ppcInterruptOwner[8]->ServiceRoutine();
+void CInterrupt::Handler09() {
+   if(ppcInterruptOwner[8])
+      ppcInterruptOwner[8]->ServiceRoutine();
+}
+
+// void CInterrupt::Handler10() {
+//    if(ppcInterruptOwner[9])
+//       ppcInterruptOwner[9]->ServiceRoutine();
 // }
 
-void CInterrupt::Handler10() {
-   if(ppcInterruptOwner[9])
-      ppcInterruptOwner[9]->ServiceRoutine();
-}
+// void CInterrupt::Handler11() {
+//    if(ppcInterruptOwner[10])
+//       ppcInterruptOwner[10]->ServiceRoutine();
+// }
 
-void CInterrupt::Handler11() {
-   if(ppcInterruptOwner[10])
-      ppcInterruptOwner[10]->ServiceRoutine();
-}
-
-void CInterrupt::Handler12() {
-   if(ppcInterruptOwner[11])
-      ppcInterruptOwner[11]->ServiceRoutine();
-}
+// void CInterrupt::Handler12() {
+//    if(ppcInterruptOwner[11])
+//       ppcInterruptOwner[11]->ServiceRoutine();
+// }
 
 // void CInterrupt::Handler13() {
 //    if(ppcInterruptOwner[12])
@@ -87,10 +87,10 @@ void CInterrupt::Handler12() {
 //       ppcInterruptOwner[14]->ServiceRoutine();
 // }
 
-void CInterrupt::Handler16() {
-   if(ppcInterruptOwner[15])
-      ppcInterruptOwner[15]->ServiceRoutine();
-}
+// void CInterrupt::Handler16() {
+//    if(ppcInterruptOwner[15])
+//       ppcInterruptOwner[15]->ServiceRoutine();
+// }
 
 // void CInterrupt::Handler17() {
 //    if(ppcInterruptOwner[16])
