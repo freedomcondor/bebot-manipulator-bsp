@@ -17,6 +17,9 @@
 #include <tw_controller.h>
 #include <nfc_controller.h>
 #include <timer.h>
+#include <tw_channel_selector.h>
+#include <stepper_motor_controller.h>
+#include <electromagnet_controller.h>
 
 #define PWR_MON_MASK   0x03
 #define PWR_MON_PGOOD  0x02
@@ -53,8 +56,9 @@ public:
    int Exec() {
       fprintf(m_psHUART, "Booted...");
 
-
       uint8_t unInput = 0;
+      uint8_t unHalfPeriod = 0;
+      CStepperMotorController::ERotationDirection eRotationDirection = CStepperMotorController::ERotationDirection::FORWARD;
 
       for(;;) {
          if(Firmware::GetInstance().GetHUARTController().Available()) {
@@ -78,6 +82,47 @@ public:
          case 'u':
             fprintf(m_psHUART, "Uptime = %lums\r\n", m_cTimer.GetMilliseconds());
             break;
+         case 'i':
+            InitPN532();
+            break;
+         case 'r':
+            TestRF();
+            break;
+         case 'd':
+            fprintf(m_psHUART, "Testing Destructive Field\r\n");
+            TestDestructiveField();
+            break;
+         case 'c':
+            fprintf(m_psHUART, "Testing Constructive Field\r\n");
+            TestConstructiveField();
+            break;
+         case 'e':
+            fprintf(m_psHUART, "MTR Disable\r\n");
+            m_cStepperMotorController.Disable();
+            break;
+         case 'E':
+            fprintf(m_psHUART, "MTR Enable\r\n");
+            m_cStepperMotorController.Enable();
+            break;
+         case '+':
+            unHalfPeriod += 1;
+            fprintf(m_psHUART, "MTR Half Period = %u\r\n", unHalfPeriod);            
+            m_cStepperMotorController.SetHalfPeriod(unHalfPeriod, eRotationDirection);
+            break;
+         case '-':
+            unHalfPeriod -= 1;
+            fprintf(m_psHUART, "MTR Half Period = %u\r\n", unHalfPeriod);            
+            m_cStepperMotorController.SetHalfPeriod(unHalfPeriod, eRotationDirection);
+            break;
+         case '#':
+            fprintf(m_psHUART, "MTR Swap Direction\r\n");
+            if(eRotationDirection == CStepperMotorController::ERotationDirection::FORWARD) {
+               eRotationDirection = CStepperMotorController::ERotationDirection::REVERSE;
+            } else {
+               eRotationDirection = CStepperMotorController::ERotationDirection::FORWARD;
+            }
+            m_cStepperMotorController.SetHalfPeriod(unHalfPeriod, eRotationDirection);
+            break;
          default:
             break;
          }
@@ -93,6 +138,10 @@ private:
    void TestPMIC();
    void TestNFCTx();
    void TestNFCRx();
+   void TestRF();
+   void TestDestructiveField();
+   void TestConstructiveField();
+
 
    /* private constructor */
    Firmware() :
@@ -126,7 +175,13 @@ private:
  
    CTWController& m_cTWController;
 
+   CTWChannelSelector m_cTWChannelSelector;
+
    CNFCController m_cNFCController;
+
+   CStepperMotorController m_cStepperMotorController;
+
+   CElectromagnetController m_cElectromagnetController;
 
    static Firmware _firmware;
 

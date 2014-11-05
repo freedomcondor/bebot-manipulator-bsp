@@ -1,5 +1,7 @@
 #include "firmware.h"
 
+#include <tw_channel_selector.h>
+
 /* initialisation of the static singleton */
 Firmware Firmware::_firmware;
 
@@ -124,5 +126,75 @@ void Firmware::TestNFCRx() {
 
 /***********************************************************/
 /***********************************************************/
+
+void Firmware::TestRF() {
+   //m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Interfaceboard, 0);
+   m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Mainboard, 0);
+
+   Firmware::GetInstance().GetTWController().Read(0x71, 1, true);
+   fprintf(m_psHUART, "0x71 = 0x%02x\r\n", Firmware::GetInstance().GetTWController().Read());
+
+   Firmware::GetInstance().GetTWController().Read(0x70, 1, true);
+   fprintf(m_psHUART, "0x70 = 0x%02x\r\n", Firmware::GetInstance().GetTWController().Read());
+   
+
+   Firmware::GetInstance().GetTWController().BeginTransmission(0x13);    
+   Firmware::GetInstance().GetTWController().Write(0x81);
+   Firmware::GetInstance().GetTWController().EndTransmission(false);
+   Firmware::GetInstance().GetTWController().Read(0x13, 1, true);
+   if(Firmware::GetInstance().GetTWController().Read() == 0x11) {
+      fprintf(m_psHUART, "Sucess!\r\n");
+   }
+   else {
+      fprintf(m_psHUART, "Fail!\r\n");
+   }
+   //m_cTWChannelSelector.Reset();
+}
+
+/***********************************************************/
+/***********************************************************/
+
+void Firmware::TestDestructiveField() {
+   uint8_t unReading = 0;
+   m_cElectromagnetController.SetDischargeMode(CElectromagnetController::EDischargeMode::DISABLE);
+   m_cElectromagnetController.SetChargingEnabled(true);
+   while((unReading = m_cElectromagnetController.GetAccumulatedVoltage()) < 0xE0) {
+      fprintf(m_psHUART, "Accumulated Charge = 0x%02x\r\n", unReading);
+      GetTimer().Delay(500);
+   } 
+   fprintf(m_psHUART, "Fire!\r\n");
+   m_cElectromagnetController.SetDischargeMode(CElectromagnetController::EDischargeMode::DESTRUCTIVE);
+   while((unReading = m_cElectromagnetController.GetAccumulatedVoltage()) > 0x70) {
+      GetTimer().Delay(100);
+   } 
+   m_cElectromagnetController.SetChargingEnabled(false);
+   while((unReading = m_cElectromagnetController.GetAccumulatedVoltage()) > 0x50) {
+      GetTimer().Delay(100);
+   } 
+   m_cElectromagnetController.SetDischargeMode(CElectromagnetController::EDischargeMode::DISABLE);
+}
+
+/***********************************************************/
+/***********************************************************/
+
+void Firmware::TestConstructiveField() {
+   uint8_t unReading = 0;
+   m_cElectromagnetController.SetDischargeMode(CElectromagnetController::EDischargeMode::DISABLE);
+   m_cElectromagnetController.SetChargingEnabled(true);
+   while((unReading = m_cElectromagnetController.GetAccumulatedVoltage()) < 0xE0) {
+      fprintf(m_psHUART, "Accumulated Charge = 0x%02x\r\n", unReading);
+      GetTimer().Delay(500);
+   } 
+   fprintf(m_psHUART, "Fire!\r\n");
+   m_cElectromagnetController.SetDischargeMode(CElectromagnetController::EDischargeMode::CONSTRUCTIVE);
+   while((unReading = m_cElectromagnetController.GetAccumulatedVoltage()) > 0x70) {
+      GetTimer().Delay(100);
+   } 
+   m_cElectromagnetController.SetChargingEnabled(false);
+   while((unReading = m_cElectromagnetController.GetAccumulatedVoltage()) > 0x50) {
+      GetTimer().Delay(100);
+   } 
+   m_cElectromagnetController.SetDischargeMode(CElectromagnetController::EDischargeMode::DISABLE);
+}
 
 
