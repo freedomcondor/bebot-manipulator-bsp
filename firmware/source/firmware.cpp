@@ -128,26 +128,20 @@ void Firmware::TestNFCRx() {
 /***********************************************************/
 
 void Firmware::TestRF() {
-   //m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Interfaceboard, 0);
-   m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Mainboard, 0);
+   m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Interfaceboard, 0);
+   //m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Mainboard, 0);
 
-   Firmware::GetInstance().GetTWController().Read(0x71, 1, true);
-   fprintf(m_psHUART, "0x71 = 0x%02x\r\n", Firmware::GetInstance().GetTWController().Read());
-
-   Firmware::GetInstance().GetTWController().Read(0x70, 1, true);
-   fprintf(m_psHUART, "0x70 = 0x%02x\r\n", Firmware::GetInstance().GetTWController().Read());
-   
-
-   Firmware::GetInstance().GetTWController().BeginTransmission(0x13);    
-   Firmware::GetInstance().GetTWController().Write(0x81);
-   Firmware::GetInstance().GetTWController().EndTransmission(false);
-   Firmware::GetInstance().GetTWController().Read(0x13, 1, true);
-   if(Firmware::GetInstance().GetTWController().Read() == 0x11) {
-      fprintf(m_psHUART, "Sucess!\r\n");
+   if(m_cRFController.Probe()) {
+      fprintf(m_psHUART, "Success!\r\n");
    }
    else {
       fprintf(m_psHUART, "Fail!\r\n");
+      return;
    }
+   
+   m_cRFController.Configure();
+   fprintf(m_psHUART, "Proximity Value = %u\r\n", m_cRFController.ReadProximity());
+   fprintf(m_psHUART, "Ambient Value = %u\r\n", m_cRFController.ReadAmbient());
    //m_cTWChannelSelector.Reset();
 }
 

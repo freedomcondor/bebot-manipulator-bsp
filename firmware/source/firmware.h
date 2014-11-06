@@ -20,10 +20,15 @@
 #include <tw_channel_selector.h>
 #include <stepper_motor_controller.h>
 #include <electromagnet_controller.h>
+#include <rf_controller.h>
 
 #define PWR_MON_MASK   0x03
 #define PWR_MON_PGOOD  0x02
 #define PWR_MON_CHG    0x01
+
+/* NFC Reset and Interrupt Signals on Port D */
+#define NFC_INT        0x04
+#define NFC_RST        0x08
 
 class Firmware {
 public:
@@ -54,11 +59,17 @@ public:
    }
 
    int Exec() {
-      fprintf(m_psHUART, "Booted...");
+      fprintf(m_psHUART, "Booted...\r\n");
 
       uint8_t unInput = 0;
       uint8_t unHalfPeriod = 0;
       CStepperMotorController::ERotationDirection eRotationDirection = CStepperMotorController::ERotationDirection::FORWARD;
+
+      /* NFC Reset and Interrupt Signals */
+      /* Enable pull up on IRQ line, drive one on RST line */
+      PORTD |= (NFC_INT | NFC_RST);
+      DDRD |= NFC_RST;
+      DDRD &= ~NFC_INT;
 
       for(;;) {
          if(Firmware::GetInstance().GetHUARTController().Available()) {
@@ -182,6 +193,8 @@ private:
    CStepperMotorController m_cStepperMotorController;
 
    CElectromagnetController m_cElectromagnetController;
+
+   CRFController m_cRFController;
 
    static Firmware _firmware;
 
