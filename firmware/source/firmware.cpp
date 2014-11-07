@@ -60,7 +60,7 @@ void Firmware::TestPMIC() {
 /***********************************************************/
 
 void Firmware::TestNFCTx() {
-   uint8_t punOutboundBuffer[] = {'S','M','A','R','T','B','L','K','0','2'};
+   uint8_t punOutboundBuffer[] = {'M','A','N','I','P','U','L','A','T','O','R'};
    uint8_t punInboundBuffer[20];
    uint8_t unRxCount = 0;
 
@@ -69,7 +69,7 @@ void Firmware::TestNFCTx() {
    if(m_cNFCController.P2PInitiatorInit()) {
       fprintf(m_psHUART, "Connected!\r\n");
       unRxCount = m_cNFCController.P2PInitiatorTxRx(punOutboundBuffer,
-                                                    10,
+                                                    11,
                                                     punInboundBuffer,
                                                     20);
       if(unRxCount > 0) {
