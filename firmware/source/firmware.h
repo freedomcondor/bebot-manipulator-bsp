@@ -30,10 +30,10 @@
 #define NFC_INT        0x04
 #define NFC_RST        0x08
 
-class Firmware {
+class CFirmware {
 public:
       
-   static Firmware& GetInstance() {
+   static CFirmware& GetInstance() {
       return _firmware;
    }
 
@@ -54,92 +54,15 @@ public:
       return m_cTWController;
    }
 
+   CStepperMotorController& GetStepperMotorController() {
+      return m_cStepperMotorController;
+   }
+
    CTimer& GetTimer() {
       return m_cTimer;
    }
 
-   int Exec() {
-      fprintf(m_psHUART, "Booted...\r\n");
-
-      uint8_t unInput = 0;
-      uint8_t unHalfPeriod = 0;
-      CStepperMotorController::ERotationDirection eRotationDirection = CStepperMotorController::ERotationDirection::FORWARD;
-
-      /* NFC Reset and Interrupt Signals */
-      /* Enable pull up on IRQ line, drive one on RST line */
-      PORTD |= (NFC_INT | NFC_RST);
-      DDRD |= NFC_RST;
-      DDRD &= ~NFC_INT;
-
-      for(;;) {
-         if(Firmware::GetInstance().GetHUARTController().Available()) {
-            unInput = Firmware::GetInstance().GetHUARTController().Read();
-            /* flush */
-            while(Firmware::GetInstance().GetHUARTController().Available()) {
-               Firmware::GetInstance().GetHUARTController().Read();
-            }
-         }
-         else {
-            unInput = 0;
-         }
-
-         switch(unInput) {
-         case 't':
-            TestNFCTx();
-            break;
-         case 'p':
-            TestPMIC();
-            break;
-         case 'u':
-            fprintf(m_psHUART, "Uptime = %lums\r\n", m_cTimer.GetMilliseconds());
-            break;
-         case 'i':
-            InitPN532();
-            break;
-         case 'r':
-            TestRF();
-            break;
-         case 'd':
-            fprintf(m_psHUART, "Testing Destructive Field\r\n");
-            TestDestructiveField();
-            break;
-         case 'c':
-            fprintf(m_psHUART, "Testing Constructive Field\r\n");
-            TestConstructiveField();
-            break;
-         case 'e':
-            fprintf(m_psHUART, "MTR Disable\r\n");
-            m_cStepperMotorController.Disable();
-            break;
-         case 'E':
-            fprintf(m_psHUART, "MTR Enable\r\n");
-            m_cStepperMotorController.Enable();
-            break;
-         case '+':
-            unHalfPeriod += 1;
-            fprintf(m_psHUART, "MTR Half Period = %u\r\n", unHalfPeriod);            
-            m_cStepperMotorController.SetHalfPeriod(unHalfPeriod, eRotationDirection);
-            break;
-         case '-':
-            unHalfPeriod -= 1;
-            fprintf(m_psHUART, "MTR Half Period = %u\r\n", unHalfPeriod);            
-            m_cStepperMotorController.SetHalfPeriod(unHalfPeriod, eRotationDirection);
-            break;
-         case '#':
-            fprintf(m_psHUART, "MTR Swap Direction\r\n");
-            if(eRotationDirection == CStepperMotorController::ERotationDirection::FORWARD) {
-               eRotationDirection = CStepperMotorController::ERotationDirection::REVERSE;
-            } else {
-               eRotationDirection = CStepperMotorController::ERotationDirection::FORWARD;
-            }
-            m_cStepperMotorController.SetHalfPeriod(unHalfPeriod, eRotationDirection);
-            break;
-         default:
-            break;
-         }
-      }
-      return 0;
-   }
+   void Exec();
       
 private:
 
@@ -155,7 +78,7 @@ private:
 
 
    /* private constructor */
-   Firmware() :
+   CFirmware() :
       m_cTimer(TCCR2A,
                TCCR2A | (1 << WGM21) | (1 << WGM20),
                TCCR2B,
@@ -166,7 +89,8 @@ private:
                TCNT2,
                TIMER2_OVF_vect_num),
       m_cHUARTController(HardwareSerial::instance()),
-      m_cTWController(CTWController::GetInstance()) {     
+      m_cTWController(CTWController::GetInstance()),
+      m_cLimitSwitchInterrupt(this, PCINT2_vect_num) {     
 
       /* Enable interrupts */
       sei();
@@ -196,7 +120,21 @@ private:
 
    CRFController m_cRFController;
 
-   static Firmware _firmware;
+   class CLimitSwitchInterrupt : public CInterrupt {
+   public:
+      CLimitSwitchInterrupt(CFirmware* pc_firmware, 
+                           uint8_t un_intr_vect_num);
+
+      void Enable();
+
+      void Disable();
+   private:  
+      CFirmware* m_pcFirmware;
+      uint8_t m_unPortLast;
+      void ServiceRoutine();
+   } m_cLimitSwitchInterrupt;
+
+   static CFirmware _firmware;
 
 public: // TODO, don't make these public
     /* File structs for fprintf */

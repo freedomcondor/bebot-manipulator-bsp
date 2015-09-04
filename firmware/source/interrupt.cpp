@@ -32,10 +32,10 @@ void CInterrupt::Register(CInterrupt* pc_interrupt, uint8_t un_interrupt_num) {
 //       ppcInterruptOwner[3]->ServiceRoutine();
 // }
 
-// void CInterrupt::Handler05() {
-//    if(ppcInterruptOwner[4])
-//       ppcInterruptOwner[4]->ServiceRoutine();
-// }
+void CInterrupt::Handler05() {
+   if(ppcInterruptOwner[4])
+      ppcInterruptOwner[4]->ServiceRoutine();
+}
 
 // void CInterrupt::Handler06() {
 //    if(ppcInterruptOwner[5])
