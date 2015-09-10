@@ -5,6 +5,8 @@
 #define COILS_CTRL_A 0x01
 #define COILS_CTRL_B 0x02
 
+#include <avr/io.h>
+
 class CElectromagnetController {
 
 public:
@@ -42,8 +44,8 @@ CElectromagnetController() {
       return ADCH;
    }
 
-   void SetChargingEnabled(bool b_enable_charging) {
-      if(b_enable_charging) {
+   void SetChargeEnable(bool b_charge_enable) {
+      if(b_charge_enable) {
          DDRC |= COILS_REG_EN;
       } else {
          DDRC &= ~COILS_REG_EN;

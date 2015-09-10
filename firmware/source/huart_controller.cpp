@@ -9,7 +9,7 @@
 #include "huart_controller.h"
 
 // Singleton Instance /////////////////////////////////////////////////////////////////////////
-HardwareSerial HardwareSerial::_hardware_serial;
+CHUARTController CHUARTController::_hardware_serial;
 
 // Interrupt Routines and Data ////////////////////////////////////////////////////////////////
 
@@ -17,17 +17,9 @@ HardwareSerial HardwareSerial::_hardware_serial;
 // using a ring buffer (I think), in which head is the index of the location
 // to which to write the next incoming character and tail is the index of the
 // location from which to read.
-#define SERIAL_BUFFER_SIZE 64
 
-struct ring_buffer
-{
-  unsigned char buffer[SERIAL_BUFFER_SIZE];
-  volatile unsigned int head;
-  volatile unsigned int tail;
-};
-
-ring_buffer rx_buffer  =  { { 0 }, 0, 0 };
-ring_buffer tx_buffer  =  { { 0 }, 0, 0 };
+CHUARTController::SRingBuffer rx_buffer  =  { { 0 }, 0, 0 };
+CHUARTController::SRingBuffer tx_buffer  =  { { 0 }, 0, 0 };
 
 /****************************************/
 /****************************************/
@@ -70,7 +62,7 @@ ISR(USART_UDRE_vect)
 
 // Constructors ////////////////////////////////////////////////////////////////
 
-HardwareSerial::HardwareSerial() {
+CHUARTController::CHUARTController() {
    _rx_buffer = &rx_buffer;
    _tx_buffer = &tx_buffer;
    _ubrrh = &UBRR0H;
@@ -94,7 +86,7 @@ HardwareSerial::HardwareSerial() {
 
 // Public Methods //////////////////////////////////////////////////////////////
 
-void HardwareSerial::Begin(unsigned long baud)
+void CHUARTController::Begin(unsigned long baud)
 {
   uint16_t baud_setting;
   bool use_u2x = true;
@@ -133,7 +125,7 @@ try_again:
 /****************************************/
 /****************************************/
 
-void HardwareSerial::End()
+void CHUARTController::End()
 {
   // wait for transmission of outgoing data
   while (_tx_buffer->head != _tx_buffer->tail);
@@ -152,7 +144,7 @@ void HardwareSerial::End()
 /****************************************/
 /****************************************/
 
-int HardwareSerial::Available(void)
+int CHUARTController::Available(void)
 {
   return (int)(SERIAL_BUFFER_SIZE + _rx_buffer->head - _rx_buffer->tail) % SERIAL_BUFFER_SIZE;
 }
@@ -160,7 +152,7 @@ int HardwareSerial::Available(void)
 /****************************************/
 /****************************************/
 
-int HardwareSerial::Peek(void)
+int CHUARTController::Peek(void)
 {
   if (_rx_buffer->head == _rx_buffer->tail) {
     return -1;
@@ -172,13 +164,13 @@ int HardwareSerial::Peek(void)
 /****************************************/
 /****************************************/
 
-int HardwareSerial::Read(void)
+uint8_t CHUARTController::Read(void)
 {
   // if the head isn't ahead of the tail, we don't have any characters
   if (_rx_buffer->head == _rx_buffer->tail) {
     return -1;
   } else {
-    unsigned char c = _rx_buffer->buffer[_rx_buffer->tail];
+    uint8_t c = _rx_buffer->buffer[_rx_buffer->tail];
     _rx_buffer->tail = (unsigned int)(_rx_buffer->tail + 1) % SERIAL_BUFFER_SIZE;
     return c;
   }
@@ -187,7 +179,7 @@ int HardwareSerial::Read(void)
 /****************************************/
 /****************************************/
 
-void HardwareSerial::Flush() {
+void CHUARTController::Flush() {
   // UDR is kept full while the buffer is not empty, so TXC triggers when EMPTY && SENT
   while (transmitting && ! (*_ucsra & _BV(TXC0)));
   transmitting = false;
@@ -196,7 +188,7 @@ void HardwareSerial::Flush() {
 /****************************************/
 /****************************************/
 
-uint8_t HardwareSerial::Write(uint8_t c) {
+uint8_t CHUARTController::Write(uint8_t c) {
   unsigned int i = (_tx_buffer->head + 1) % SERIAL_BUFFER_SIZE;
 	
   // If the output buffer is full, there's nothing for it other than to 

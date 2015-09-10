@@ -18,8 +18,8 @@
 #include <nfc_controller.h>
 #include <timer.h>
 #include <tw_channel_selector.h>
-#include <stepper_motor_controller.h>
-#include <electromagnet_controller.h>
+#include <lift_actuator_system.h>
+#include <packet_control_interface.h>
 #include <rf_controller.h>
 
 #define PWR_MON_MASK   0x03
@@ -41,12 +41,7 @@ public:
       m_psHUART = ps_huart;
    }
 
-   /*
    CHUARTController& GetHUARTController() {
-      return m_cHUARTController;
-   }
-   */
-   HardwareSerial& GetHUARTController() {
       return m_cHUARTController;
    }
 
@@ -54,8 +49,8 @@ public:
       return m_cTWController;
    }
 
-   CStepperMotorController& GetStepperMotorController() {
-      return m_cStepperMotorController;
+   CLiftActuatorSystem& GetLiftActuatorSystem() {
+      return m_cLiftActuatorSystem;
    }
 
    CTimer& GetTimer() {
@@ -66,16 +61,10 @@ public:
       
 private:
 
-   bool InitPN532();
-
    /* Test Routines */
    void TestPMIC();
-   void TestNFCTx();
-   void TestNFCRx();
-   void TestRF();
    void TestDestructiveField();
    void TestConstructiveField();
-
 
    /* private constructor */
    CFirmware() :
@@ -88,9 +77,9 @@ private:
                TIFR2,
                TCNT2,
                TIMER2_OVF_vect_num),
-      m_cHUARTController(HardwareSerial::instance()),
+      m_cHUARTController(CHUARTController::instance()),
       m_cTWController(CTWController::GetInstance()),
-      m_cLimitSwitchInterrupt(this, PCINT2_vect_num) {     
+      m_cPacketControlInterface(m_cHUARTController) {     
 
       /* Enable interrupts */
       sei();
@@ -106,7 +95,7 @@ private:
    /* ATMega328P Controllers */
    /* TODO remove singleton and reference from HUART */
    //CHUARTController& m_cHUARTController;
-   HardwareSerial& m_cHUARTController;
+   CHUARTController& m_cHUARTController;
  
    CTWController& m_cTWController;
 
@@ -114,25 +103,11 @@ private:
 
    CNFCController m_cNFCController;
 
-   CStepperMotorController m_cStepperMotorController;
+   CLiftActuatorSystem m_cLiftActuatorSystem;
 
-   CElectromagnetController m_cElectromagnetController;
+   CPacketControlInterface m_cPacketControlInterface;
 
    CRFController m_cRFController;
-
-   class CLimitSwitchInterrupt : public CInterrupt {
-   public:
-      CLimitSwitchInterrupt(CFirmware* pc_firmware, 
-                           uint8_t un_intr_vect_num);
-
-      void Enable();
-
-      void Disable();
-   private:  
-      CFirmware* m_pcFirmware;
-      uint8_t m_unPortLast;
-      void ServiceRoutine();
-   } m_cLimitSwitchInterrupt;
 
    static CFirmware _firmware;
 

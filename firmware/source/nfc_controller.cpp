@@ -242,7 +242,7 @@ bool CNFCController::P2PTargetInit() {
             1 - send successfully
 */
 /*****************************************************************************/
-uint8_t CNFCController::P2PInitiatorTxRx(uint8_t* pun_tx_buffer,
+uint8_t CNFCController::P2PInitiatorTxRx(const uint8_t* pun_tx_buffer,
                                          uint8_t  un_tx_buffer_len,
                                          uint8_t* pun_rx_buffer,
                                          uint8_t  un_rx_buffer_len) {
@@ -307,7 +307,7 @@ uint8_t CNFCController::P2PInitiatorTxRx(uint8_t* pun_tx_buffer,
 */
 /*****************************************************************************/
 
-uint8_t CNFCController::P2PTargetTxRx(uint8_t* pun_tx_buffer, 
+uint8_t CNFCController::P2PTargetTxRx(const uint8_t* pun_tx_buffer, 
                                       uint8_t  un_tx_buffer_len,
                                       uint8_t* pun_rx_buffer,
                                       uint8_t  un_rx_buffer_len) {
