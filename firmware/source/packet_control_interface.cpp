@@ -5,6 +5,9 @@
 
 CPacketControlInterface::CPacket::EType CPacketControlInterface::CPacket::GetType() const {
    switch(m_unTypeId) {
+   case 0x00:
+      return EType::GET_UPTIME;
+      break;
    case 0x60:
       return EType::GET_CHARGER_STATUS;
       break;

@@ -71,10 +71,23 @@ void CFirmware::Exec() {
 
    for(;;) {
       m_cPacketControlInterface.ProcessInput();
-
       if(m_cPacketControlInterface.GetState() == CPacketControlInterface::EState::RECV_COMMAND) {
          CPacketControlInterface::CPacket cPacket = m_cPacketControlInterface.GetPacket();
          switch(cPacket.GetType()) {
+         case CPacketControlInterface::CPacket::EType::GET_UPTIME:
+            if(cPacket.GetDataLength() == 0) {
+               uint32_t unUptime = m_cTimer.GetMilliseconds();
+               uint8_t punTxData[] = {
+                  uint8_t((unUptime >> 24) & 0xFF),
+                  uint8_t((unUptime >> 16) & 0xFF),
+                  uint8_t((unUptime >> 8 ) & 0xFF),
+                  uint8_t((unUptime >> 0 ) & 0xFF)
+               };
+               m_cPacketControlInterface.SendPacket(CPacketControlInterface::CPacket::EType::GET_UPTIME,
+                                                    punTxData,
+                                                    4);
+            }
+            break;
          case CPacketControlInterface::CPacket::EType::GET_CHARGER_STATUS:
             if(cPacket.GetDataLength() == 0) {
                uint8_t punTxData[] {

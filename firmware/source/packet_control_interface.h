@@ -41,6 +41,8 @@ public:
    public:
       
       enum class EType : uint8_t {
+         GET_UPTIME = 0x00,
+
          /*************************************/
          /* Sensor-Actuator Microcontroller   */
          /*************************************/
@@ -48,6 +50,8 @@ public:
          SET_DDS_ENABLE = 0x10,
          SET_DDS_SPEED  = 0x11,
          GET_DDS_SPEED  = 0x12,
+         SET_DDS_PARAMS = 0x13,
+         GET_DDS_PARAMS = 0x14,
          /* Accelerometer System Packets */
          GET_ACCEL_READING = 0x20,
 
