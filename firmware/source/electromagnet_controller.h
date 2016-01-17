@@ -6,6 +6,7 @@
 #define COILS_CTRL_B 0x02
 
 #include <avr/io.h>
+#include <adc_controller.h>
 
 class CElectromagnetController {
 
@@ -25,23 +26,10 @@ CElectromagnetController() {
       /* Initially put the coil driver in sleep mode */
       PORTB &= ~(COILS_CTRL_A | COILS_CTRL_B);
       DDRB |= (COILS_CTRL_A | COILS_CTRL_B);
-
-      /* Initialize the analog to digital converter */
-      /* Use the internal 1.1V reference, select ADC7 as input, left align result */
-      ADMUX |= ((1 << REFS1) | (1 << REFS0) |
-                (1 << ADLAR) |
-                (1 << MUX2 ) | (1 << MUX1) | (1 << MUX0));
-      /* Enable the ADC and set the prescaler to 64, (8MHz / 64 = 125kHz) */
-      ADCSRA |= ((1 << ADEN) | (1 << ADPS2) | (1 << ADPS1));
    }
 
    uint8_t GetAccumulatedVoltage() {
-      /* Start conversion */
-      ADCSRA |= (1 << ADSC);
-      /* Wait for the conversion to complete */
-      while((ADCSRA & (1 << ADSC)) != 0);
-      /* Return the result */
-      return ADCH;
+      return CADCController::GetInstance().GetValue(CADCController::EChannel::ADC7);
    }
 
    void SetChargeEnable(bool b_charge_enable) {
