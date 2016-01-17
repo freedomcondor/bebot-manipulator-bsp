@@ -7,7 +7,6 @@
 /***********************************************************/
 
 #define NFC_RX_BUFFER_LENGTH 8
-#define NUM_RF_SENSORS 4
 
 /***********************************************************/
 /***********************************************************/
@@ -63,13 +62,18 @@ void CFirmware::Exec() {
             bNFCInitSuccess?"passed":"failed");
 
    /* Initialise range finders */   
-   for(uint8_t unRfIdx = 0; unRfIdx < 4; unRfIdx++) {
-      m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Interfaceboard, unRfIdx);
-      if(m_cRFController.Probe())
-         m_cRFController.Configure();
+   for(SRFDevice& sRangeFinder : m_psRangeFinders) {
+      m_cTWChannelSelector.Select(sRangeFinder.Location, sRangeFinder.Index);
+      if(sRangeFinder.Device.Probe()) {
+         sRangeFinder.Device.Configure();
+      }
    }
-
+   
    for(;;) {
+      if((m_cTimer.GetMilliseconds() % 200) == 0) {
+         fprintf(m_psHUART, "%i\r\n", m_cLiftActuatorSystem.GetPosition());
+      }
+   
       m_cPacketControlInterface.ProcessInput();
       if(m_cPacketControlInterface.GetState() == CPacketControlInterface::EState::RECV_COMMAND) {
          CPacketControlInterface::CPacket cPacket = m_cPacketControlInterface.GetPacket();
@@ -86,6 +90,14 @@ void CFirmware::Exec() {
                m_cPacketControlInterface.SendPacket(CPacketControlInterface::CPacket::EType::GET_UPTIME,
                                                     punTxData,
                                                     4);
+            }
+            break;
+         case CPacketControlInterface::CPacket::EType::GET_BATT_LVL:
+            if(cPacket.GetDataLength() == 0) {
+               uint8_t unBattLevel = CADCController::GetInstance().GetValue(CADCController::EChannel::ADC6);
+               m_cPacketControlInterface.SendPacket(CPacketControlInterface::CPacket::EType::GET_BATT_LVL,
+                                                    &unBattLevel,
+                                                    1);
             }
             break;
          case CPacketControlInterface::CPacket::EType::GET_CHARGER_STATUS:
@@ -165,8 +177,9 @@ void CFirmware::Exec() {
                uint8_t punTxData[NUM_RF_SENSORS * 2];
                for(uint8_t unRfIdx = 0; unRfIdx < NUM_RF_SENSORS; unRfIdx++) {
                   uint16_t unReading;                     
-                  m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Interfaceboard, unRfIdx);
-                  unReading = m_cRFController.ReadProximity();
+                  m_cTWChannelSelector.Select(m_psRangeFinders[unRfIdx].Location,
+                                              m_psRangeFinders[unRfIdx].Index);
+                  unReading = m_psRangeFinders[unRfIdx].Device.ReadProximity();
                   punTxData[unRfIdx * 2] = unReading >> 8;
                   punTxData[unRfIdx * 2 + 1] = unReading & 0xFF;
                }
@@ -181,13 +194,14 @@ void CFirmware::Exec() {
                uint8_t punTxData[NUM_RF_SENSORS * 2];
                for(uint8_t unRfIdx = 0; unRfIdx < NUM_RF_SENSORS; unRfIdx++) {
                   uint16_t unReading;                     
-                  m_cTWChannelSelector.Select(CTWChannelSelector::EBoard::Interfaceboard, unRfIdx);
-                  unReading = m_cRFController.ReadAmbient();
+                  m_cTWChannelSelector.Select(m_psRangeFinders[unRfIdx].Location,
+                                              m_psRangeFinders[unRfIdx].Index);
+                  unReading = m_psRangeFinders[unRfIdx].Device.ReadAmbient();
                   punTxData[unRfIdx * 2] = unReading >> 8;
                   punTxData[unRfIdx * 2 + 1] = unReading & 0xFF;
                }
                m_cPacketControlInterface.SendPacket(
-                  CPacketControlInterface::CPacket::EType::GET_RF_RANGE,
+                  CPacketControlInterface::CPacket::EType::GET_RF_AMBIENT,
                   punTxData,
                   NUM_RF_SENSORS * 2);
             }
@@ -212,7 +226,6 @@ void CFirmware::Exec() {
             }
             break;
          default:
-            m_cPacketControlInterface.SendPacket(CPacketControlInterface::CPacket::EType::INVALID);
             break;
          }
       }

@@ -1,6 +1,13 @@
 #ifndef STEPPER_MOTOR_CONTROLLER_H
 #define STEPPER_MOTOR_CONTROLLER_H
 
+/* Port D */
+#define STM_CHA_MASK  0x20
+#define STM_CHB_MASK  0x40
+
+/* Port C */
+#define MTR_REG_EN    0x04
+
 #include <stdint.h>
 
 class CStepperMotorController {
@@ -41,8 +48,6 @@ private:
    uint8_t m_unHalfPeriod;
 
    ERotationDirection m_eRotationDirection;
-
-
 };
 
 

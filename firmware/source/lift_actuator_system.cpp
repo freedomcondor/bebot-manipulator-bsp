@@ -1,6 +1,8 @@
 
 #include "lift_actuator_system.h"
 
+#include <avr/interrupt.h>
+
 #define PORTD_LTSW_TOP_IRQ 0x10
 #define PORTD_LTSW_BTM_IRQ 0x80
 
@@ -10,11 +12,13 @@
 /***********************************************************/
 
 CLiftActuatorSystem::CLiftActuatorSystem() :
-   m_cLimitSwitchInterrupt(this, PCINT2_vect_num),
    m_bLowerLimitSwitchEvent(false),
-   m_bUpperLimitSwitchEvent(false) {
+   m_bUpperLimitSwitchEvent(false),
+   m_cLimitSwitchInterrupt(this, PCINT2_vect_num),
+   m_cWaveformTimerInterrupt(this, TIMER0_COMPA_vect_num) {
 
    m_cLimitSwitchInterrupt.Enable();
+   m_cWaveformTimerInterrupt.Enable();
 }
 
 
@@ -61,12 +65,12 @@ void CLiftActuatorSystem::SetLiftActuatorSpeed(int8_t n_speed) {
    }
    else {
       if(n_speed < 0) {
-         m_cStepperMotorController.SetRotationDirection(CStepperMotorController::ERotationDirection::REVERSE);
+         m_cStepperMotorController.SetRotationDirection(CStepperMotorController::ERotationDirection::FORWARD);
          /* Take the absolute value of nSpeed saturating at INT8_MAX */
          n_speed = ((n_speed == INT8_MIN) ? INT8_MAX : -n_speed);
       }
       else {
-         m_cStepperMotorController.SetRotationDirection(CStepperMotorController::ERotationDirection::FORWARD);
+         m_cStepperMotorController.SetRotationDirection(CStepperMotorController::ERotationDirection::REVERSE);
       }
       /* Mapped range of values for half period is 20-51 */
       m_cStepperMotorController.SetHalfPeriod(20 + ((INT8_MAX - n_speed) / 4));
@@ -90,6 +94,17 @@ bool CLiftActuatorSystem::GetUpperLimitSwitchState() {
 
 bool CLiftActuatorSystem::GetLowerLimitSwitchState() {
    return ((PIND & PORTD_LTSW_BTM_IRQ) != 0);
+}
+
+/***********************************************************/
+/***********************************************************/
+
+int16_t CLiftActuatorSystem::GetPosition() {
+      uint8_t unSREG = SREG;
+      cli();
+      int16_t nVal = m_nPosition;
+      SREG = unSREG;
+      return nVal;
 }
 
 /***********************************************************/
@@ -146,6 +161,7 @@ void CLiftActuatorSystem::CLimitSwitchInterrupt::ServiceRoutine() {
    if(unPortDelta & PORTD_LTSW_BTM_IRQ) {
       if((unPortSnapshot & PORTD_LTSW_BTM_IRQ) != 0) {
          m_pcLiftActuatorSystem->m_cStepperMotorController.Disable();
+         m_pcLiftActuatorSystem->m_nPosition = 0;
          m_pcLiftActuatorSystem->m_bLowerLimitSwitchEvent = true;
       }
    }
@@ -154,3 +170,38 @@ void CLiftActuatorSystem::CLimitSwitchInterrupt::ServiceRoutine() {
 
 /***********************************************************/
 /***********************************************************/
+
+CLiftActuatorSystem::CWaveformTimerInterrupt::CWaveformTimerInterrupt(CLiftActuatorSystem* pc_lift_actuator_system,
+                                                                     uint8_t un_intr_vect_num) : 
+   m_pcLiftActuatorSystem(pc_lift_actuator_system) {
+   Register(this, un_intr_vect_num);
+}
+
+/***********************************************************/
+/***********************************************************/
+
+void CLiftActuatorSystem::CWaveformTimerInterrupt::Enable() {
+   /* Enable output compare match interrupt on channel A */ 
+   TIMSK0 |= (1 << OCIE0A);
+}
+
+/***********************************************************/
+/***********************************************************/
+
+void CLiftActuatorSystem::CWaveformTimerInterrupt::Disable() {
+   /* Disable output compare match interrupt on channel A */ 
+   TIMSK0 &= ~(1 << OCIE0A);
+}
+
+/***********************************************************/
+/***********************************************************/
+
+void CLiftActuatorSystem::CWaveformTimerInterrupt::ServiceRoutine() {
+   uint8_t unPort = PIND;
+   if(((unPort ^ (unPort << 1)) & STM_CHB_MASK) == 0) {
+      m_pcLiftActuatorSystem->m_nPosition++;
+   }
+   else {
+      m_pcLiftActuatorSystem->m_nPosition--;
+   }
+}

@@ -3,11 +3,17 @@
 
 #include "packet_control_interface.h"
 
+/***********************************************************/
+/***********************************************************/
+
 CPacketControlInterface::CPacket::EType CPacketControlInterface::CPacket::GetType() const {
    switch(m_unTypeId) {
    case 0x00:
       return EType::GET_UPTIME;
       break;
+   case 0x01:
+      return EType::GET_BATT_LVL;
+      break;     
    case 0x60:
       return EType::GET_CHARGER_STATUS;
       break;
@@ -40,26 +46,40 @@ CPacketControlInterface::CPacket::EType CPacketControlInterface::CPacket::GetTyp
       break;
    }
 }
+
+/***********************************************************/
+/***********************************************************/
       
 bool CPacketControlInterface::CPacket::HasData() const {
    return (m_unDataLength != 0);
 }
 
+/***********************************************************/
+/***********************************************************/
+
 uint8_t CPacketControlInterface::CPacket::GetDataLength() const {
    return m_unDataLength;
 }
+
+/***********************************************************/
+/***********************************************************/
 
 const uint8_t* CPacketControlInterface::CPacket::GetDataPointer() const {
    return m_punData;
 }
 
+/***********************************************************/
+/***********************************************************/
+
 CPacketControlInterface::EState CPacketControlInterface::GetState() const {
    return m_eState;
 }
 
+/***********************************************************/
+/***********************************************************/
 
 void CPacketControlInterface::SendPacket(CPacket::EType e_type,
-                                         uint8_t* pun_tx_data,
+                                         const uint8_t* pun_tx_data,
                                          uint8_t un_tx_data_length) {
 
    uint8_t punTxBuffer[TX_COMMAND_BUFFER_LENGTH];
@@ -84,12 +104,18 @@ void CPacketControlInterface::SendPacket(CPacket::EType e_type,
       m_cController.Write(punTxBuffer[unIdx]);
 }
 
+/***********************************************************/
+/***********************************************************/
+
 void CPacketControlInterface::Reset() {
    m_unRxBufferPointer = 0;
    m_unUsedBufferLength = 0;
    m_unReparseOffset = RX_COMMAND_BUFFER_LENGTH;
    m_eState = EState::SRCH_PREAMBLE1;
 }
+
+/***********************************************************/
+/***********************************************************/
    
 void CPacketControlInterface::ProcessInput() {
    bool bBufAdjustReq = false;
@@ -203,6 +229,9 @@ void CPacketControlInterface::ProcessInput() {
    }
 }
 
+/***********************************************************/
+/***********************************************************/
+
 const char* CPacketControlInterface::StateToString(CPacketControlInterface::EState e_state) const {
    switch(e_state) {
    case EState::SRCH_PREAMBLE1:
@@ -226,10 +255,15 @@ const char* CPacketControlInterface::StateToString(CPacketControlInterface::ESta
    }
 }
 
+/***********************************************************/
+/***********************************************************/
+
 const CPacketControlInterface::CPacket& CPacketControlInterface::GetPacket() const {
    return m_cPacket;
 }
 
+/***********************************************************/
+/***********************************************************/
 
 uint8_t CPacketControlInterface::ComputeChecksum(uint8_t* pun_buf_data, uint8_t un_buf_length) {
    uint8_t unChecksum = 0;

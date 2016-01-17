@@ -42,6 +42,7 @@ public:
       
       enum class EType : uint8_t {
          GET_UPTIME = 0x00,
+         GET_BATT_LVL = 0x01,
 
          /*************************************/
          /* Sensor-Actuator Microcontroller   */
@@ -59,8 +60,13 @@ public:
          /* Power Management Microcontroller  */
          /*************************************/
          /* Switches */
-         SET_SYSTEM_POWER_ENABLE = 0x40,
-         SET_ACTUATOR_POWER_ENABLE = 0x41,
+         SET_ACTUATOR_POWER_ENABLE = 0x40,
+         SET_ACTUATOR_INPUT_LIMIT_OVERRIDE = 0x41,
+         SET_USBIF_ENABLE = 0x42,
+         /* Other */
+         REQ_SOFT_PWDN = 0x43,
+         GET_PM_STATUS = 0x44,
+         GET_USB_STATUS = 0x45,
 
          /*************************************/
          /* Manipulator Microcontroller       */
@@ -126,8 +132,19 @@ public:
    void Reset();
 
    void SendPacket(CPacket::EType e_type,
-                   uint8_t* pun_tx_data = NULL,
-                   uint8_t un_tx_data_length = 0);
+                   const uint8_t* pun_tx_data,
+                   uint8_t un_tx_data_length);
+                   
+   void SendPacket(CPacket::EType e_type,
+                   uint8_t un_tx_data) {
+      SendPacket(e_type, &un_tx_data, 1);                
+   }
+   
+   void SendPacket(CPacket::EType e_type) {
+      SendPacket(e_type, nullptr, 0);                
+   }
+
+
       
 private:
    uint8_t ComputeChecksum(uint8_t* pun_buf_data, uint8_t un_buf_length);

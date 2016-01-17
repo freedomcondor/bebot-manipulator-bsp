@@ -30,6 +30,8 @@
 #define NFC_INT        0x04
 #define NFC_RST        0x08
 
+#define NUM_RF_SENSORS 5
+
 class CFirmware {
 public:
       
@@ -106,6 +108,18 @@ private:
    CLiftActuatorSystem m_cLiftActuatorSystem;
 
    CPacketControlInterface m_cPacketControlInterface;
+   
+   struct SRFDevice {
+      CTWChannelSelector::EBoard Location;
+      uint8_t Index;
+      CRFController Device;
+   } m_psRangeFinders[NUM_RF_SENSORS] = {
+      {CTWChannelSelector::EBoard::Mainboard, 0},
+      {CTWChannelSelector::EBoard::Interfaceboard, 0},
+      {CTWChannelSelector::EBoard::Interfaceboard, 1},
+      {CTWChannelSelector::EBoard::Interfaceboard, 2},
+      {CTWChannelSelector::EBoard::Interfaceboard, 3},
+   };
 
    CRFController m_cRFController;
 

@@ -1,13 +1,6 @@
 
 #include "stepper_motor_controller.h"
 
-/* Port D */
-#define STM_CHA_MASK  0x20
-#define STM_CHB_MASK  0x40
-
-/* Port C */
-#define MTR_REG_EN     0x04
-
 #include <avr/io.h>
 #include <firmware.h>
 
@@ -72,4 +65,8 @@ void CStepperMotorController::Enable() {
 void CStepperMotorController::Disable() {
    /* Disable the regulator */
    PORTC &= ~MTR_REG_EN;
+   /* Stop the counter (prescaler to zero) */
+   TCCR0B &= ~((1 << CS02) | (1 << CS01) | (1 << CS00));
+   /* Set the count to zero */
+   TCNT0 = 0;
 }

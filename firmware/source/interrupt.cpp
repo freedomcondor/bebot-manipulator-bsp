@@ -77,10 +77,10 @@ void CInterrupt::Handler09() {
 //       ppcInterruptOwner[12]->ServiceRoutine();
 // }
 
-// void CInterrupt::Handler14() {
-//    if(ppcInterruptOwner[13])
-//       ppcInterruptOwner[13]->ServiceRoutine();
-// }
+void CInterrupt::Handler14() {
+   if(ppcInterruptOwner[13])
+      ppcInterruptOwner[13]->ServiceRoutine();
+}
 
 // void CInterrupt::Handler15() {
 //    if(ppcInterruptOwner[14])
