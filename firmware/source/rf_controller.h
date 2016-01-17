@@ -5,13 +5,6 @@
 
 class CRFController {
 public:
-   enum class ESampleRate : uint8_t {
-      F3M12300 = 0,
-      F1M56250 = 1,
-      F781K250 = 2,
-      F390K625 = 3
-   };
-
    enum class ENumberOfSamples : uint8_t {
       N1   = 0,
       N2   = 1,
@@ -22,11 +15,15 @@ public:
       N64  = 6,
       N128 = 7
    };
+   
+   enum class EDeviceType {
+      VCNL4000,
+      VCNL4010
+   } m_eDeviceType;
 
    bool Probe();
 
-   void Configure(ESampleRate e_sample_rate = ESampleRate::F781K250,
-                  ENumberOfSamples e_num_samples = ENumberOfSamples::N32,
+   void Configure(ENumberOfSamples e_num_samples = ENumberOfSamples::N32,
                   uint8_t un_led_current = 20);
 
    uint16_t ReadProximity();
