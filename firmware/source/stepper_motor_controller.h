@@ -37,12 +37,12 @@ public:
       return m_eRotationDirection;
    }
 
-   void UpdateWaveform();
-
    void Enable();
 
    void Disable();
 
+   void UpdateWaveform();
+   
 private:
 
    uint8_t m_unHalfPeriod;

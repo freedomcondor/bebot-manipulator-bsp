@@ -1,8 +1,6 @@
 #ifndef LIFT_ACTUATOR_SYSTEM_H
 #define LIFT_ACTUATOR_SYSTEM_H
 
-#define LIFT_ACTUATOR_RANGE 140
-
 #include <stepper_motor_controller.h>
 #include <electromagnet_controller.h>
 #include <interrupt.h>
@@ -10,34 +8,25 @@
 class CLiftActuatorSystem {
 
 public:
-
-   enum class EMode {
-      SPEED_CONTROL,
-      POSITION_CONTROL,      
-   } eMode;
-
-public:
    CLiftActuatorSystem();
 
-   void SetLiftActuatorSpeed(int8_t n_lift_actuator_speed);
-  
-   void StartCalibration();
+   /* speed is in mm/sec - for performance reasons this value is 
+      saturates into the range of 10mm/sec and 25mm/sec */
+   void SetSpeed(int8_t n_speed);
+
+   /* position is in mm */
+   void SetPosition(uint8_t un_position);
    
-   void AbortCalibration();
+   /* position is in mm */      
+   uint8_t GetPosition();
    
-   bool IsCalibrated();
-   
-   int16_t GetPosition();
-   
-   void SetPosition() {
-      if(m_bIsCalibrated) {
-         
-      }
-   }
+   void Calibrate();
    
    bool GetUpperLimitSwitchState();
 
-   bool GetLowerLimitSwitchState();  
+   bool GetLowerLimitSwitchState();
+   
+   void HandleLimitSwitchEvent();
 
    CElectromagnetController& GetElectromagnetController() {
       return m_cElectromagnetController;
@@ -51,10 +40,10 @@ private:
    volatile bool m_bLowerLimitSwitchEvent;
    volatile bool m_bUpperLimitSwitchEvent;
    
-   volatile int16_t m_nPosition;
+   int16_t m_nMaxPosition;
    
-   bool m_bIsCalibrated;
-
+   bool m_bCalibrated;
+      
    /* Interrupt for monitoring the limit switches */   
    class CLimitSwitchInterrupt : public CInterrupt {
    public:
@@ -68,25 +57,42 @@ private:
       void ServiceRoutine();
    } m_cLimitSwitchInterrupt;
    
-   friend class CLimitSwitchInterrupt;
-  
-   /* Interrupt for tracking the position of the end effector */
-   // Interrupt only enabled in position control mode, requires calibration. control must wait for cal before continuing.
-   
-   //class CControlStepInterrupt 
-   class CWaveformTimerInterrupt : public CInterrupt {
+ 
+   /* Interrupt for tracking (and when in position control mode, controlling) 
+      the position of the end effector */
+   class CStepCounterInterrupt : public CInterrupt {
    public:
-      CWaveformTimerInterrupt(CLiftActuatorSystem* pc_lift_actuator_system, 
-                              uint8_t un_intr_vect_num);
+      CStepCounterInterrupt(CLiftActuatorSystem* pc_lift_actuator_system, 
+                            uint8_t un_intr_vect_num);
       void Enable();
-      void Disable();
+      void Disable();      
+      int16_t GetPosition();
    private:  
       CLiftActuatorSystem* m_pcLiftActuatorSystem;
+      /* Note: representation of position is in cycles not mm */
+      volatile int16_t m_nPosition;
       void ServiceRoutine();
-   } m_cWaveformTimerInterrupt;
-   
-   friend class CWaveformTimerInterrupt;
 
+   } m_cStepCounterInterrupt;
+   
+   /* Closed loop position control */
+   class CPositionController {
+   public:
+      CPositionController(CLiftActuatorSystem* pc_lift_actuator_system);
+      void Enable();
+      void Disable();
+      void Step();
+      void SetTargetPosition(int16_t n_target_position);
+   private:
+      CLiftActuatorSystem* m_pcLiftActuatorSystem;
+      bool m_bEnabled;
+      int16_t m_nTargetPosition;
+   } m_cPositionController;
+
+   /* Subclasses are friends of CLiftActuatorSystem */
+   friend class CLimitSwitchInterrupt;
+   friend class CStepCounterInterrupt;
+   friend class CPositionController;
 };
 
 #endif

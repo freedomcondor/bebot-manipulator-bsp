@@ -17,11 +17,23 @@ CPacketControlInterface::CPacket::EType CPacketControlInterface::CPacket::GetTyp
    case 0x60:
       return EType::GET_CHARGER_STATUS;
       break;
+   case 0x70:
+      return EType::SET_LIFT_ACTUATOR_POSITION;
+      break;      
    case 0x71:
+      return EType::GET_LIFT_ACTUATOR_POSITION;
+      break;      
+   case 0x72:
       return EType::SET_LIFT_ACTUATOR_SPEED;
       break;
-   case 0x72:
+   case 0x73:
       return EType::GET_LIMIT_SWITCH_STATE;
+      break;
+   case 0x74:
+      return EType::START_LIFT_ACTUATOR_CALIBRATION;
+      break;
+   case 0x75:
+      return EType::ABORT_LIFT_ACTUATOR_CALIBRATION;
       break;
    case 0x80:
       return EType::SET_EM_CHARGE_ENABLE;

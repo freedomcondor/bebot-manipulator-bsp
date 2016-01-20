@@ -68,12 +68,8 @@ void CFirmware::Exec() {
          sRangeFinder.Device.Configure();
       }
    }
-   
-   for(;;) {
-      if((m_cTimer.GetMilliseconds() % 200) == 0) {
-         fprintf(m_psHUART, "%i\r\n", m_cLiftActuatorSystem.GetPosition());
-      }
-   
+      
+   for(;;) {  
       m_cPacketControlInterface.ProcessInput();
       if(m_cPacketControlInterface.GetState() == CPacketControlInterface::EState::RECV_COMMAND) {
          CPacketControlInterface::CPacket cPacket = m_cPacketControlInterface.GetPacket();
@@ -111,13 +107,33 @@ void CFirmware::Exec() {
                   punTxData,
                   sizeof(punTxData));
             }
-            break;                               
+            break;            
+         case CPacketControlInterface::CPacket::EType::SET_LIFT_ACTUATOR_POSITION:
+            /* Set the speed of the stepper motor */
+            if(cPacket.GetDataLength() == 1) {
+               const uint8_t* punRxData = cPacket.GetDataPointer();
+               m_cLiftActuatorSystem.SetPosition(punRxData[0]);
+            }
+            break;
+         case CPacketControlInterface::CPacket::EType::GET_LIFT_ACTUATOR_POSITION:
+            /* Set the speed of the stepper motor */
+            if(cPacket.GetDataLength() == 0) {
+               m_cPacketControlInterface.SendPacket(
+                  CPacketControlInterface::CPacket::EType::GET_LIFT_ACTUATOR_POSITION,
+                  m_cLiftActuatorSystem.GetPosition());
+            }
+            break;
          case CPacketControlInterface::CPacket::EType::SET_LIFT_ACTUATOR_SPEED:
             /* Set the speed of the stepper motor */
             if(cPacket.GetDataLength() == 1) {
                const uint8_t* punRxData = cPacket.GetDataPointer();
                int8_t nSpeed = reinterpret_cast<const int8_t&>(punRxData[0]);
-               m_cLiftActuatorSystem.SetLiftActuatorSpeed(nSpeed);
+               m_cLiftActuatorSystem.SetSpeed(nSpeed);
+            }
+            break;
+         case CPacketControlInterface::CPacket::EType::START_LIFT_ACTUATOR_CALIBRATION:
+            if(cPacket.GetDataLength() == 0) {
+               m_cLiftActuatorSystem.Calibrate();
             }
             break;
          case CPacketControlInterface::CPacket::EType::GET_LIMIT_SWITCH_STATE:

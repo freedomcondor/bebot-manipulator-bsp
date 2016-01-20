@@ -73,8 +73,12 @@ public:
          /*************************************/
          GET_CHARGER_STATUS = 0x60,
          /* Lift Actuator System */
-         SET_LIFT_ACTUATOR_SPEED = 0x71,
-         GET_LIMIT_SWITCH_STATE = 0x72,
+         SET_LIFT_ACTUATOR_POSITION = 0x70,
+         GET_LIFT_ACTUATOR_POSITION = 0x71,
+         SET_LIFT_ACTUATOR_SPEED = 0x72,
+         GET_LIMIT_SWITCH_STATE = 0x73,
+         START_LIFT_ACTUATOR_CALIBRATION = 0x74,
+         ABORT_LIFT_ACTUATOR_CALIBRATION = 0x75,        
          /* Electromagnet Subsystem */
          SET_EM_CHARGE_ENABLE = 0x80,
          SET_EM_DISCHARGE_MODE = 0x81,

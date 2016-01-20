@@ -26,35 +26,10 @@ CStepperMotorController::CStepperMotorController() :
 
 /***********************************************************/
 /***********************************************************/
-   
-void CStepperMotorController::UpdateWaveform() {
-   /* Stop the counter (prescaler to zero) */
-   TCCR0B &= ~((1 << CS02) | (1 << CS01) | (1 << CS00));
-   /* Set the count to zero */
-   TCNT0 = 0;
-   /* if the speed is zero, there is no need to do anything further */
-   if(m_unHalfPeriod != 0) {
-      uint8_t unPort = PIND;
-      bool bChAEqualsChB = (((unPort ^ (unPort << 1)) & STM_CHB_MASK) == 0);
-      /* In order to avoid skipping a step in the motor excitation sequence,
-         it is required in two situations to manually toggle channel A */
-      if((m_eRotationDirection == ERotationDirection::FORWARD && bChAEqualsChB) ||
-         (m_eRotationDirection == ERotationDirection::REVERSE && !bChAEqualsChB)) {
-         /* Toggle channel A */
-         TCCR0B |= (1 << FOC0A);
-      }
-      /* set the half period for the excitation sequence */
-      OCR0A = m_unHalfPeriod;
-      OCR0B = m_unHalfPeriod >> 1;
-      /* Re-enable the counter (prescaler to 1024) */
-      TCCR0B |= ((1 << CS02) | (1 << CS00));
-   }
-}
-
-/***********************************************************/
-/***********************************************************/
 
 void CStepperMotorController::Enable() {
+   /* Configure the timer */
+   UpdateWaveform();
    /* Enable the regulator */
    PORTC |= MTR_REG_EN;
 }
@@ -70,3 +45,31 @@ void CStepperMotorController::Disable() {
    /* Set the count to zero */
    TCNT0 = 0;
 }
+
+/***********************************************************/
+/***********************************************************/
+   
+void CStepperMotorController::UpdateWaveform() {
+   /* Stop the counter (prescaler to zero) */
+   TCCR0B &= ~((1 << CS02) | (1 << CS01) | (1 << CS00));
+   /* Set the count to zero */
+   TCNT0 = 0;
+   /* if the speed is zero, there is no need to do anything further */
+   if(m_unHalfPeriod != 0) {
+      uint8_t unPort = PIND;
+      bool bChAEqualsChB = (((unPort ^ (unPort << 1)) & STM_CHB_MASK) == 0);
+      /* In order to avoid skipping a step in the motor excitation sequence,
+         it is required in two situations to manually toggle channel A */
+      if((m_eRotationDirection == ERotationDirection::REVERSE && bChAEqualsChB) ||
+         (m_eRotationDirection == ERotationDirection::FORWARD && !bChAEqualsChB)) {
+         /* Toggle channel A */
+         TCCR0B |= (1 << FOC0A);
+      }
+      /* set the half period for the excitation sequence */
+      OCR0A = m_unHalfPeriod;
+      OCR0B = m_unHalfPeriod >> 1;
+      /* Re-enable the counter (prescaler to 1024) */
+      TCCR0B |= ((1 << CS02) | (1 << CS00));
+   }
+}
+
