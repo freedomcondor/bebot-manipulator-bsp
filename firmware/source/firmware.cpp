@@ -69,7 +69,10 @@ void CFirmware::Exec() {
       }
    }
       
-   for(;;) {  
+   for(;;) {
+      /* step the lift actuator system state machine */
+      m_cLiftActuatorSystem.Step();
+      /* check the PCI for input */
       m_cPacketControlInterface.ProcessInput();
       if(m_cPacketControlInterface.GetState() == CPacketControlInterface::EState::RECV_COMMAND) {
          CPacketControlInterface::CPacket cPacket = m_cPacketControlInterface.GetPacket();
@@ -113,6 +116,26 @@ void CFirmware::Exec() {
             if(cPacket.GetDataLength() == 1) {
                const uint8_t* punRxData = cPacket.GetDataPointer();
                m_cLiftActuatorSystem.SetPosition(punRxData[0]);
+               m_cLiftActuatorSystem.ProcessEvent(CLiftActuatorSystem::ESystemEvent::START_POSITION_CTRL);
+            }
+            break;
+         case CPacketControlInterface::CPacket::EType::SET_LIFT_ACTUATOR_SPEED:
+            /* Set the speed of the stepper motor */
+            if(cPacket.GetDataLength() == 1) {
+               const uint8_t* punRxData = cPacket.GetDataPointer();
+               int8_t nSpeed = reinterpret_cast<const int8_t&>(punRxData[0]);
+               m_cLiftActuatorSystem.SetSpeed(nSpeed);
+               m_cLiftActuatorSystem.ProcessEvent(CLiftActuatorSystem::ESystemEvent::START_SPEED_CTRL);
+            }
+            break;
+         case CPacketControlInterface::CPacket::EType::CALIBRATE_LIFT_ACTUATOR:
+            if(cPacket.GetDataLength() == 0) {
+               m_cLiftActuatorSystem.ProcessEvent(CLiftActuatorSystem::ESystemEvent::START_CALIBRATION);
+            }
+            break;
+         case CPacketControlInterface::CPacket::EType::EMER_STOP_LIFT_ACTUATOR:
+            if(cPacket.GetDataLength() == 0) {
+               m_cLiftActuatorSystem.ProcessEvent(CLiftActuatorSystem::ESystemEvent::STOP);
             }
             break;
          case CPacketControlInterface::CPacket::EType::GET_LIFT_ACTUATOR_POSITION:
@@ -123,17 +146,12 @@ void CFirmware::Exec() {
                   m_cLiftActuatorSystem.GetPosition());
             }
             break;
-         case CPacketControlInterface::CPacket::EType::SET_LIFT_ACTUATOR_SPEED:
+         case CPacketControlInterface::CPacket::EType::GET_LIFT_ACTUATOR_STATE:
             /* Set the speed of the stepper motor */
-            if(cPacket.GetDataLength() == 1) {
-               const uint8_t* punRxData = cPacket.GetDataPointer();
-               int8_t nSpeed = reinterpret_cast<const int8_t&>(punRxData[0]);
-               m_cLiftActuatorSystem.SetSpeed(nSpeed);
-            }
-            break;
-         case CPacketControlInterface::CPacket::EType::START_LIFT_ACTUATOR_CALIBRATION:
             if(cPacket.GetDataLength() == 0) {
-               m_cLiftActuatorSystem.Calibrate();
+               m_cPacketControlInterface.SendPacket(
+                  CPacketControlInterface::CPacket::EType::GET_LIFT_ACTUATOR_STATE,
+                  static_cast<uint8_t>(m_cLiftActuatorSystem.GetSystemState()));
             }
             break;
          case CPacketControlInterface::CPacket::EType::GET_LIMIT_SWITCH_STATE:
@@ -241,7 +259,7 @@ void CFirmware::Exec() {
                m_cNFCController.PowerDown();
             }
             break;
-         default:
+         default:            
             break;
          }
       }

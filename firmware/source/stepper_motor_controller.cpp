@@ -28,8 +28,6 @@ CStepperMotorController::CStepperMotorController() :
 /***********************************************************/
 
 void CStepperMotorController::Enable() {
-   /* Configure the timer */
-   UpdateWaveform();
    /* Enable the regulator */
    PORTC |= MTR_REG_EN;
 }
@@ -72,4 +70,12 @@ void CStepperMotorController::UpdateWaveform() {
       TCCR0B |= ((1 << CS02) | (1 << CS00));
    }
 }
+
+/***********************************************************/
+/***********************************************************/
+
+bool CStepperMotorController::IsWaveformActive() {
+   return (TCCR0B & ((1 << CS02) | (1 << CS01) | (1 << CS00)) != 0);
+}
+
 

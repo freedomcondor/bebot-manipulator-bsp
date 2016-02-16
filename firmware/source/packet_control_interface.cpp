@@ -30,10 +30,13 @@ CPacketControlInterface::CPacket::EType CPacketControlInterface::CPacket::GetTyp
       return EType::GET_LIMIT_SWITCH_STATE;
       break;
    case 0x74:
-      return EType::START_LIFT_ACTUATOR_CALIBRATION;
+      return EType::CALIBRATE_LIFT_ACTUATOR;
       break;
    case 0x75:
-      return EType::ABORT_LIFT_ACTUATOR_CALIBRATION;
+      return EType::EMER_STOP_LIFT_ACTUATOR;
+      break;
+   case 0x76:
+      return EType::GET_LIFT_ACTUATOR_STATE;
       break;
    case 0x80:
       return EType::SET_EM_CHARGE_ENABLE;

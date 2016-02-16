@@ -43,6 +43,8 @@ public:
 
    void UpdateWaveform();
    
+   bool IsWaveformActive();
+   
 private:
 
    uint8_t m_unHalfPeriod;

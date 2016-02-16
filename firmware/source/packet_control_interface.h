@@ -77,8 +77,9 @@ public:
          GET_LIFT_ACTUATOR_POSITION = 0x71,
          SET_LIFT_ACTUATOR_SPEED = 0x72,
          GET_LIMIT_SWITCH_STATE = 0x73,
-         START_LIFT_ACTUATOR_CALIBRATION = 0x74,
-         ABORT_LIFT_ACTUATOR_CALIBRATION = 0x75,        
+         CALIBRATE_LIFT_ACTUATOR = 0x74,
+         EMER_STOP_LIFT_ACTUATOR = 0x75,
+         GET_LIFT_ACTUATOR_STATE = 0x76,
          /* Electromagnet Subsystem */
          SET_EM_CHARGE_ENABLE = 0x80,
          SET_EM_DISCHARGE_MODE = 0x81,
