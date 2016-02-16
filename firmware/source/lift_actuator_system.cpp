@@ -85,33 +85,13 @@ uint8_t CLiftActuatorSystem::GetPosition() {
 /***********************************************************/
 /***********************************************************/
 
-struct SPastEvent {
-  CLiftActuatorSystem::ESystemEvent event = CLiftActuatorSystem::ESystemEvent::STOP;
-  uint32_t time = 0;
-};
-
-SPastEvent psPastEvents[3];
-
-/***********************************************************/
-/***********************************************************/
-
 /* Reminder: this method can be called from an interrupt context */
 void CLiftActuatorSystem::ProcessEvent(ESystemEvent e_system_event) {
    /* since this method can be called from both an interrupt and non-interrupt 
       context, we must clear the interrupt flag so it is only invoked once */
    uint8_t unSREG = SREG;
    cli();
-      
-   uint32_t time = CFirmware::GetInstance().GetTimer().GetMilliseconds();
-   SPastEvent* psOldestEvent = psPastEvents;
-   for(SPastEvent& s_past_event : psPastEvents) {
-      if(s_past_event.time < psOldestEvent->time) {
-         psOldestEvent = &s_past_event;
-      }
-   }
-   psOldestEvent->time = time;
-   psOldestEvent->event = e_system_event;
-
+   /* check the event type */
    switch(e_system_event) {
    case ESystemEvent::LIMIT_SWITCH_PRESSED:
       m_cStepperMotorController.Disable();
@@ -152,57 +132,10 @@ void CLiftActuatorSystem::ProcessEvent(ESystemEvent e_system_event) {
    SREG = unSREG;
 }
 
-const char* SystemStateToString(CLiftActuatorSystem::ESystemState e_system_state) {
-   switch(e_system_state) {
-   case CLiftActuatorSystem::ESystemState::INACTIVE:
-      return "INACTIVE";
-      break;
-   case CLiftActuatorSystem::ESystemState::CALIBRATION_SRCH_BTM:
-      return "CALIBRATION_SRCH_BTM";
-      break;
-   case CLiftActuatorSystem::ESystemState::CALIBRATION_SRCH_TOP:
-      return "CALIBRATION_SRCH_TOP";
-      break;
-   case CLiftActuatorSystem::ESystemState::ACTIVE_SPEED_CTRL:
-      return "ACTIVE_SPEED_CTRL";
-      break;
-   case CLiftActuatorSystem::ESystemState::ACTIVE_POSITION_CTRL:
-      return "ACTIVE_POSITION_CTRL";
-      break;
-   default:
-      return "ERROR";
-      break;
-   }
-}
-
-const char* SystemEventToString(CLiftActuatorSystem::ESystemEvent e_system_event) {
-   switch(e_system_event) {
-   case CLiftActuatorSystem::ESystemEvent::LIMIT_SWITCH_PRESSED:
-      return "LIMIT_SWITCH_PRESSED";
-      break;
-   case CLiftActuatorSystem::ESystemEvent::STOP:
-      return "STOP";
-      break;
-   case CLiftActuatorSystem::ESystemEvent::START_CALIBRATION:
-      return "START_CALIBRATION";
-      break;
-   case CLiftActuatorSystem::ESystemEvent::START_POSITION_CTRL:
-      return "START_POSITION_CTRL";
-      break;
-   case CLiftActuatorSystem::ESystemEvent::START_SPEED_CTRL:
-      return "START_SPEED_CTRL";
-      break;
-   default:
-      return "ERROR";
-      break;
-   }
-}
-
 /***********************************************************/
 /***********************************************************/
 
-/* Note: this method is never called from an interrupt context, 
-         it is polled from CFirmware::Exec */
+/* Note: this method is never called from an interrupt context, it is polled from CFirmware::Exec */
 void CLiftActuatorSystem::Step() {
    /* since m_eSystemState and the motor configuration can be modified from an 
       interrupt context, we must clear the interrupt flag so this doesn't happen. */
@@ -235,44 +168,29 @@ void CLiftActuatorSystem::Step() {
       eRotationDirection = m_cPositionController.GetRotationDirection();
       break;
    }
-
    /* If the system is not inactive, update the stepper motor control and enable */
    if(m_eSystemState != ESystemState::INACTIVE) {
-      /* only start the motor in the given direction if the respective limit switches is not active */
-      if((eRotationDirection == CStepperMotorController::ERotationDirection::REVERSE) &&
-         (m_cLimitSwitchInterrupt.GetUpperSwitchState() == true)) {
-         m_cStepperMotorController.Disable();
-         return;
+      /* only start the motor in the given direction if the respective limit switch is not active */
+      if(((eRotationDirection == CStepperMotorController::ERotationDirection::REVERSE) &&
+         (m_cLimitSwitchInterrupt.GetUpperSwitchState() == true)) ||
+         ((eRotationDirection == CStepperMotorController::ERotationDirection::FORWARD) &&
+         (m_cLimitSwitchInterrupt.GetLowerSwitchState() == true))) {
+         ProcessEvent(ESystemEvent::STOP);
       }
-      if((eRotationDirection == CStepperMotorController::ERotationDirection::FORWARD) &&
-         (m_cLimitSwitchInterrupt.GetLowerSwitchState() == true)) {
-         m_cStepperMotorController.Disable();
-         return;
+      else {     
+         /* only update the waveform if the */
+         if(m_cStepperMotorController.IsWaveformActive() == false ||
+            unTargetHalfPeriod != m_cStepperMotorController.GetHalfPeriod() ||
+            eRotationDirection != m_cStepperMotorController.GetRotationDirection()) {
+            m_cStepperMotorController.SetHalfPeriod(unTargetHalfPeriod);
+            m_cStepperMotorController.SetRotationDirection(eRotationDirection);
+            m_cStepperMotorController.UpdateWaveform();
+         }
+         m_cStepperMotorController.Enable();
       }
-      /* only update the waveform if the */
-      if(m_cStepperMotorController.IsWaveformActive() == false ||
-         unTargetHalfPeriod != m_cStepperMotorController.GetHalfPeriod() ||
-         eRotationDirection != m_cStepperMotorController.GetRotationDirection()) {
-         m_cStepperMotorController.SetHalfPeriod(unTargetHalfPeriod);
-         m_cStepperMotorController.SetRotationDirection(eRotationDirection);
-         m_cStepperMotorController.UpdateWaveform();
-      }
-      m_cStepperMotorController.Enable();
    }
-
    /* restore SREG, re-enable interrupts if disabled */
    SREG = unSREG;
-   
-      fprintf(CFirmware::GetInstance().m_psHUART, "Events:\r\n");
-   for(SPastEvent& s_past_event : psPastEvents) {
-      fprintf(CFirmware::GetInstance().m_psHUART, "%lu: %s\r\n", s_past_event.time, SystemEventToString(s_past_event.event));
-   }
-   
-   fprintf(CFirmware::GetInstance().m_psHUART, "State: %s\r\n", SystemStateToString(m_eSystemState));
-   
-   fprintf(CFirmware::GetInstance().m_psHUART, "Position: %d\r\n", m_cStepCounterInterrupt.GetPosition());
-   
-   fprintf(CFirmware::GetInstance().m_psHUART, "Switches: %c : %c\r\n", (m_cLimitSwitchInterrupt.GetUpperSwitchState()?'1':'0'), (m_cLimitSwitchInterrupt.GetLowerSwitchState()?'1':'0'));
 }
 
 /***********************************************************/
