@@ -128,7 +128,7 @@ void CLiftActuatorSystem::ProcessEvent(ESystemEvent e_system_event) {
       m_eSystemState = ESystemState::ACTIVE_SPEED_CTRL;
       break;
    }
-   /* interrupts are now allowed to execute again */
+   /* restore SREG, re-enable interrupts if disabled */
    SREG = unSREG;
 }
 
@@ -175,7 +175,8 @@ void CLiftActuatorSystem::Step() {
          (m_cLimitSwitchInterrupt.GetUpperSwitchState() == true)) ||
          ((eRotationDirection == CStepperMotorController::ERotationDirection::FORWARD) &&
          (m_cLimitSwitchInterrupt.GetLowerSwitchState() == true))) {
-         ProcessEvent(ESystemEvent::STOP);
+         /* Assuming we are not calibrating - disable the motor and move to the inactive state */
+         ProcessEvent(ESystemEvent::LIMIT_SWITCH_PRESSED);
       }
       else {     
          /* only update the waveform if the */
